@@ -28,10 +28,20 @@ public class BridgeExporterScheduler {
         this.ddbExporterConfigTable = ddbExporterConfigTable;
     }
 
+    /** SQS client, used to send the request to Bridge-EX. */
     public final void setSqsClient(AmazonSQSClient sqsClient) {
         this.sqsClient = sqsClient;
     }
 
+    /**
+     * Sends the Bridge-EX request for the given scheduler. This is called by AWS Lambda at the configured interval.
+     * NOTE: This only calls Bridge-EX once. The actually scheduling logic is handled by AWS Lambda.
+     *
+     * @param schedulerName
+     *         scheduler name, used to get scheduler configs
+     * @throws IOException
+     *         if constructing the Bridge-EX request fails
+     */
     public void schedule(String schedulerName) throws IOException {
         // get scheduler config from DDB
         Item schedulerConfig = ddbExporterConfigTable.getItem("schedulerName", schedulerName);
