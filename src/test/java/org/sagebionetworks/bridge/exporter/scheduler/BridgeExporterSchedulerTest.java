@@ -22,7 +22,7 @@ public class BridgeExporterSchedulerTest {
     private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper();
     private static final String TEST_SCHEDULER_NAME = "test-scheduler";
     private static final String TEST_SQS_QUEUE_URL = "test-sqs-queue";
-    private static final String TEST_TIME_ZONE = "America/Los_Angeles";
+    private static final String TEST_TIME_ZONE = "Asia/Tokyo";
 
     private AmazonSQSClient mockSqsClient;
     private BridgeExporterScheduler scheduler;
@@ -31,7 +31,7 @@ public class BridgeExporterSchedulerTest {
     @BeforeMethod
     public void before() {
         // mock now
-        DateTime mockNow = DateTime.parse("2016-02-01T16:47-0800");
+        DateTime mockNow = DateTime.parse("2016-02-01T16:47+0900");
         DateTimeUtils.setCurrentMillisFixed(mockNow.getMillis());
 
         // mock DDB
