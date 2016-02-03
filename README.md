@@ -22,3 +22,6 @@ To test locally
 mvn compile exec:java -Dexec.mainClass=org.sagebionetworks.bridge.exporter.scheduler.SchedulerLauncher -Dexec.args=[scheduler name]
 
 The "compile" is important because otherwise exec:java may execute a stale version of your code
+
+To deploy, after running mvn verify, upload target/Bridge-EX-Scheduler-2.0.jar to AWS Lambda in the AWS console.
+(Travis doesn't yet support Java deployments to Lambda. See https://github.com/travis-ci/dpl/issues/397)
