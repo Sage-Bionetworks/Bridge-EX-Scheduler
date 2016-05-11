@@ -31,7 +31,7 @@ public class BridgeExporterSchedulerTest {
     @BeforeMethod
     public void before() {
         // mock now
-        DateTime mockNow = DateTime.parse("2016-02-01T16:47+0900");
+        DateTime mockNow = DateTime.parse("2016-02-01T16:47:55.273+0900");
         DateTimeUtils.setCurrentMillisFixed(mockNow.getMillis());
 
         // mock DDB
@@ -56,7 +56,26 @@ public class BridgeExporterSchedulerTest {
     }
 
     @Test
-    public void normalCase() throws Exception {
+    public void defaultScheduleType() throws Exception {
+        // No scheduleType in DDB config. No setup needed. Just call test helper directly.
+        dailyScheduleHelper();
+    }
+
+    @Test
+    public void dailyScheduleType() throws Exception {
+        schedulerConfig.withString("scheduleType", "DAILY");
+        dailyScheduleHelper();
+    }
+
+    @Test
+    public void invalidScheduleType() throws Exception {
+        // falls back to DAILY
+        schedulerConfig.withString("scheduleType", "INVALID_TYPE");
+        dailyScheduleHelper();
+    }
+
+    // Helper method for all daily schedule test cases.
+    private void dailyScheduleHelper() throws Exception {
         // execute
         scheduler.schedule(TEST_SCHEDULER_NAME);
 
@@ -69,6 +88,37 @@ public class BridgeExporterSchedulerTest {
         assertEquals(sqsMessageNode.size(), 2);
         assertEquals(sqsMessageNode.get("date").textValue(), "2016-01-31");
         assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";date=2016-01-31]");
+    }
+
+    @Test
+    public void hourlyScheduleType() throws Exception {
+        // Add hourly schedule type param. For realism, also add study whitelist.
+        schedulerConfig.withString("scheduleType", "HOURLY").withString("requestOverrideJson",
+                "{\"studyWhitelist\":[\"hourly-study\"]}");
+
+        // execute
+        scheduler.schedule(TEST_SCHEDULER_NAME);
+
+        // validate
+        ArgumentCaptor<String> sqsMessageCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockSqsClient).sendMessage(eq(TEST_SQS_QUEUE_URL), sqsMessageCaptor.capture());
+
+        String sqsMessage = sqsMessageCaptor.getValue();
+        JsonNode sqsMessageNode = JSON_OBJECT_MAPPER.readTree(sqsMessage);
+        assertEquals(sqsMessageNode.size(), 4);
+
+        String startDateTimeStr = sqsMessageNode.get("startDateTime").textValue();
+        assertEquals(DateTime.parse(startDateTimeStr), DateTime.parse("2016-02-01T15:00:00.000+0900"));
+
+        String endDateTimeStr = sqsMessageNode.get("endDateTime").textValue();
+        assertEquals(DateTime.parse(endDateTimeStr), DateTime.parse("2016-02-01T16:00:00.000+0900"));
+
+        JsonNode studyWhitelistNode = sqsMessageNode.get("studyWhitelist");
+        assertEquals(studyWhitelistNode.size(), 1);
+        assertEquals(studyWhitelistNode.get(0).textValue(), "hourly-study");
+
+        assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";startDateTime=" +
+                startDateTimeStr + ";endDateTime=" + endDateTimeStr + "]");
     }
 
     @Test
