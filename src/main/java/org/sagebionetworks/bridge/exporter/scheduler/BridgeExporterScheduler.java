@@ -89,6 +89,11 @@ public class BridgeExporterScheduler {
                 String yesterdaysDateString = LocalDate.now(timeZone).minusDays(1).toString();
                 String tag = "[scheduler=" + schedulerName + ";date=" + yesterdaysDateString + "]";
                 requestNode.put("date", yesterdaysDateString);
+                // also, put startDateTime and endDateTime
+                DateTime startDateTime = DateTime.now(timeZone).minusDays(1).withHourOfDay(0).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0);
+                DateTime endDateTime = DateTime.now(timeZone).withHourOfDay(0).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0).minusMillis(1);
+                requestNode.put("startDateTime", startDateTime.toString());
+                requestNode.put("endDateTime", endDateTime.toString());
                 requestNode.put("tag", tag);
             }
             break;
