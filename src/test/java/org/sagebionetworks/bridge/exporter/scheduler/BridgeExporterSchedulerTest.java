@@ -85,9 +85,18 @@ public class BridgeExporterSchedulerTest {
 
         String sqsMessage = sqsMessageCaptor.getValue();
         JsonNode sqsMessageNode = JSON_OBJECT_MAPPER.readTree(sqsMessage);
-        assertEquals(sqsMessageNode.size(), 2);
+        assertEquals(sqsMessageNode.size(), 5);
         assertEquals(sqsMessageNode.get("date").textValue(), "2016-01-31");
         assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";date=2016-01-31]");
+
+        String startDateTimeStr = sqsMessageNode.get("startDateTime").textValue();
+        assertEquals(DateTime.parse(startDateTimeStr), DateTime.parse("2016-01-31T00:00:00.000+0900"));
+
+        String endDateTimeStr = sqsMessageNode.get("endDateTime").textValue();
+        assertEquals(DateTime.parse(endDateTimeStr), DateTime.parse("2016-01-31T23:59:59.999+0900"));
+
+        String exportTypeStr = sqsMessageNode.get("exportType").textValue();
+        assertEquals("DAILY", exportTypeStr);
     }
 
     @Test
@@ -105,7 +114,7 @@ public class BridgeExporterSchedulerTest {
 
         String sqsMessage = sqsMessageCaptor.getValue();
         JsonNode sqsMessageNode = JSON_OBJECT_MAPPER.readTree(sqsMessage);
-        assertEquals(sqsMessageNode.size(), 4);
+        assertEquals(sqsMessageNode.size(), 5);
 
         String startDateTimeStr = sqsMessageNode.get("startDateTime").textValue();
         assertEquals(DateTime.parse(startDateTimeStr), DateTime.parse("2016-02-01T15:00:00.000+0900"));
@@ -119,6 +128,10 @@ public class BridgeExporterSchedulerTest {
 
         assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";startDateTime=" +
                 startDateTimeStr + ";endDateTime=" + endDateTimeStr + "]");
+
+
+        String exportTypeStr = sqsMessageNode.get("exportType").textValue();
+        assertEquals("HOURLY", exportTypeStr);
     }
 
     @Test
@@ -135,9 +148,15 @@ public class BridgeExporterSchedulerTest {
 
         String sqsMessage = sqsMessageCaptor.getValue();
         JsonNode sqsMessageNode = JSON_OBJECT_MAPPER.readTree(sqsMessage);
-        assertEquals(sqsMessageNode.size(), 3);
+        assertEquals(sqsMessageNode.size(), 6);
         assertEquals(sqsMessageNode.get("date").textValue(), "2016-01-31");
         assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";date=2016-01-31]");
         assertEquals(sqsMessageNode.get("foo").textValue(), "bar");
+
+        String startDateTimeStr = sqsMessageNode.get("startDateTime").textValue();
+        assertEquals(DateTime.parse(startDateTimeStr), DateTime.parse("2016-01-31T00:00:00.000+0900"));
+
+        String endDateTimeStr = sqsMessageNode.get("endDateTime").textValue();
+        assertEquals(DateTime.parse(endDateTimeStr), DateTime.parse("2016-01-31T23:59:59.999+0900"));
     }
 }
