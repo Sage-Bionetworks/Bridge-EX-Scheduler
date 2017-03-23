@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.exporter.scheduler;
 
+import static org.sagebionetworks.bridge.exporter.scheduler.BridgeExporterScheduler.ScheduleType.DAILY;
+import static org.sagebionetworks.bridge.exporter.scheduler.BridgeExporterScheduler.ScheduleType.HOURLY;
+
 import java.io.IOException;
 
 import com.amazonaws.services.dynamodbv2.document.Item;
@@ -71,14 +74,14 @@ public class BridgeExporterScheduler {
         String scheduleTypeStr = schedulerConfig.getString("scheduleType");
         if (Strings.isNullOrEmpty(scheduleTypeStr)) {
             // Defaults to DAILY
-            scheduleType = ScheduleType.DAILY;
+            scheduleType = DAILY;
         } else {
             try {
                 scheduleType = ScheduleType.valueOf(scheduleTypeStr);
             } catch (IllegalArgumentException ex) {
                 // log error, default to DAILY
                 System.err.println("Invalid schedule type: " + scheduleTypeStr);
-                scheduleType = ScheduleType.DAILY;
+                scheduleType = DAILY;
             }
         }
 
@@ -94,6 +97,7 @@ public class BridgeExporterScheduler {
                 DateTime endDateTime = DateTime.now(timeZone).withHourOfDay(0).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0).minusMillis(1);
                 requestNode.put("startDateTime", startDateTime.toString());
                 requestNode.put("endDateTime", endDateTime.toString());
+                requestNode.put("exportType", DAILY.toString());
                 requestNode.put("tag", tag);
             }
             break;
@@ -106,6 +110,7 @@ public class BridgeExporterScheduler {
                 DateTime startDateTime = endDateTime.minusHours(1);
                 String startDateTimeStr = startDateTime.toString();
                 requestNode.put("startDateTime", startDateTimeStr);
+                requestNode.put("exportType", HOURLY.toString());
 
                 String tag = "[scheduler=" + schedulerName + ";startDateTime=" + startDateTimeStr + ";endDateTime=" +
                         endDateTimeStr + "]";
