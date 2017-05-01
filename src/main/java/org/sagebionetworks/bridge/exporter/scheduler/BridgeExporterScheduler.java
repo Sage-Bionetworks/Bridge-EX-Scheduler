@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.exporter.scheduler;
 
+import static org.sagebionetworks.bridge.exporter.scheduler.BridgeExporterScheduler.ScheduleType.DAILY;
+import static org.sagebionetworks.bridge.exporter.scheduler.BridgeExporterScheduler.ScheduleType.HOURLY;
+
 import java.io.IOException;
 
 import com.amazonaws.services.dynamodbv2.document.Item;
@@ -71,14 +74,14 @@ public class BridgeExporterScheduler {
         String scheduleTypeStr = schedulerConfig.getString("scheduleType");
         if (Strings.isNullOrEmpty(scheduleTypeStr)) {
             // Defaults to DAILY
-            scheduleType = ScheduleType.DAILY;
+            scheduleType = DAILY;
         } else {
             try {
                 scheduleType = ScheduleType.valueOf(scheduleTypeStr);
             } catch (IllegalArgumentException ex) {
                 // log error, default to DAILY
                 System.err.println("Invalid schedule type: " + scheduleTypeStr);
-                scheduleType = ScheduleType.DAILY;
+                scheduleType = DAILY;
             }
         }
 
@@ -86,23 +89,23 @@ public class BridgeExporterScheduler {
         switch (scheduleType) {
             case DAILY: {
                 // Each day, we export the previous day's data.
+                DateTime endDateTime = DateTime.now(timeZone).withTimeAtStartOfDay().minusMillis(1);
                 String yesterdaysDateString = LocalDate.now(timeZone).minusDays(1).toString();
-                String tag = "[scheduler=" + schedulerName + ";date=" + yesterdaysDateString + "]";
-                requestNode.put("date", yesterdaysDateString);
+                String tag = "[scheduler=" + schedulerName + ";date=" + yesterdaysDateString + ";endDateTime=" + endDateTime.toString() + "]";
+                // also, put endDateTime
+                requestNode.put("endDateTime", endDateTime.toString());
+                requestNode.put("exportType", DAILY.toString());
                 requestNode.put("tag", tag);
             }
             break;
             case HOURLY: {
                 // endDateTime is the start of the current hour. startDateTime is the hour before.
-                DateTime endDateTime = DateTime.now(timeZone).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0);
+                DateTime endDateTime = DateTime.now(timeZone).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0).minusMillis(1);
                 String endDateTimeStr = endDateTime.toString();
                 requestNode.put("endDateTime", endDateTimeStr);
+                requestNode.put("exportType", HOURLY.toString());
 
-                DateTime startDateTime = endDateTime.minusHours(1);
-                String startDateTimeStr = startDateTime.toString();
-                requestNode.put("startDateTime", startDateTimeStr);
-
-                String tag = "[scheduler=" + schedulerName + ";startDateTime=" + startDateTimeStr + ";endDateTime=" +
+                String tag = "[scheduler=" + schedulerName + ";endDateTime=" +
                         endDateTimeStr + "]";
                 requestNode.put("tag", tag);
             }

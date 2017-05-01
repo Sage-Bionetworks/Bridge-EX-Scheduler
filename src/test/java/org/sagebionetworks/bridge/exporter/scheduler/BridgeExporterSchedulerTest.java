@@ -24,6 +24,11 @@ public class BridgeExporterSchedulerTest {
     private static final String TEST_SQS_QUEUE_URL = "test-sqs-queue";
     private static final String TEST_TIME_ZONE = "Asia/Tokyo";
 
+    private static final DateTime MOCK_NOW = DateTime.parse("2016-02-01T16:47:55.273+0900");
+
+    private static final DateTime DAILY_END_DATE_TIME = DateTime.parse("2016-01-31T23:59:59.999+0900");
+    private static final String MOCK_EXPORT_DATE = "2016-01-31";
+
     private AmazonSQSClient mockSqsClient;
     private BridgeExporterScheduler scheduler;
     private Item schedulerConfig;
@@ -31,8 +36,7 @@ public class BridgeExporterSchedulerTest {
     @BeforeMethod
     public void before() {
         // mock now
-        DateTime mockNow = DateTime.parse("2016-02-01T16:47:55.273+0900");
-        DateTimeUtils.setCurrentMillisFixed(mockNow.getMillis());
+        DateTimeUtils.setCurrentMillisFixed(MOCK_NOW.getMillis());
 
         // mock DDB
         Table mockConfigTable = mock(Table.class);
@@ -85,9 +89,10 @@ public class BridgeExporterSchedulerTest {
 
         String sqsMessage = sqsMessageCaptor.getValue();
         JsonNode sqsMessageNode = JSON_OBJECT_MAPPER.readTree(sqsMessage);
-        assertEquals(sqsMessageNode.size(), 2);
-        assertEquals(sqsMessageNode.get("date").textValue(), "2016-01-31");
-        assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";date=2016-01-31]");
+        assertEquals(sqsMessageNode.size(), 3);
+        assertEquals(sqsMessageNode.get("exportType").textValue(), "DAILY");
+        assertEquals(sqsMessageNode.get("endDateTime").textValue(), DAILY_END_DATE_TIME.toString());
+        assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";date=" + MOCK_EXPORT_DATE + ";endDateTime=" + DAILY_END_DATE_TIME.toString() + "]");
     }
 
     @Test
@@ -107,18 +112,16 @@ public class BridgeExporterSchedulerTest {
         JsonNode sqsMessageNode = JSON_OBJECT_MAPPER.readTree(sqsMessage);
         assertEquals(sqsMessageNode.size(), 4);
 
-        String startDateTimeStr = sqsMessageNode.get("startDateTime").textValue();
-        assertEquals(DateTime.parse(startDateTimeStr), DateTime.parse("2016-02-01T15:00:00.000+0900"));
-
         String endDateTimeStr = sqsMessageNode.get("endDateTime").textValue();
-        assertEquals(DateTime.parse(endDateTimeStr), DateTime.parse("2016-02-01T16:00:00.000+0900"));
+        assertEquals(DateTime.parse(endDateTimeStr), DateTime.parse("2016-02-01T15:59:59.999+0900"));
 
         JsonNode studyWhitelistNode = sqsMessageNode.get("studyWhitelist");
         assertEquals(studyWhitelistNode.size(), 1);
         assertEquals(studyWhitelistNode.get(0).textValue(), "hourly-study");
 
-        assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";startDateTime=" +
-                startDateTimeStr + ";endDateTime=" + endDateTimeStr + "]");
+        assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME
+                + ";endDateTime=" + endDateTimeStr + "]");
+        assertEquals(sqsMessageNode.get("exportType").textValue(), "HOURLY");
     }
 
     @Test
@@ -135,9 +138,10 @@ public class BridgeExporterSchedulerTest {
 
         String sqsMessage = sqsMessageCaptor.getValue();
         JsonNode sqsMessageNode = JSON_OBJECT_MAPPER.readTree(sqsMessage);
-        assertEquals(sqsMessageNode.size(), 3);
-        assertEquals(sqsMessageNode.get("date").textValue(), "2016-01-31");
-        assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";date=2016-01-31]");
+        assertEquals(sqsMessageNode.size(), 4);
+        assertEquals(sqsMessageNode.get("exportType").textValue(), "DAILY");
+        assertEquals(sqsMessageNode.get("endDateTime").textValue(), DAILY_END_DATE_TIME.toString());
+        assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";date=" + MOCK_EXPORT_DATE + ";endDateTime=" + DAILY_END_DATE_TIME.toString() + "]");
         assertEquals(sqsMessageNode.get("foo").textValue(), "bar");
     }
 }
