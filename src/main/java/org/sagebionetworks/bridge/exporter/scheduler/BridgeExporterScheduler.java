@@ -14,6 +14,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 
 /** Bridge-EX 2.0 Scheduler */
 public class BridgeExporterScheduler {
@@ -88,8 +89,9 @@ public class BridgeExporterScheduler {
         switch (scheduleType) {
             case DAILY: {
                 // Each day, we export the previous day's data.
-                DateTime endDateTime = DateTime.now(timeZone).withHourOfDay(0).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0).minusMillis(1);
-                String tag = "[scheduler=" + schedulerName + ";endDateTime=" + endDateTime.toString() + "]";
+                DateTime endDateTime = DateTime.now(timeZone).withTimeAtStartOfDay().minusMillis(1);
+                String yesterdaysDateString = LocalDate.now(timeZone).minusDays(1).toString();
+                String tag = "[scheduler=" + schedulerName + ";date=" + yesterdaysDateString + ";endDateTime=" + endDateTime.toString() + "]";
                 // also, put endDateTime
                 requestNode.put("endDateTime", endDateTime.toString());
                 requestNode.put("exportType", DAILY.toString());
@@ -98,7 +100,7 @@ public class BridgeExporterScheduler {
             break;
             case HOURLY: {
                 // endDateTime is the start of the current hour. startDateTime is the hour before.
-                DateTime endDateTime = DateTime.now(timeZone).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0);
+                DateTime endDateTime = DateTime.now(timeZone).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0).minusMillis(1);
                 String endDateTimeStr = endDateTime.toString();
                 requestNode.put("endDateTime", endDateTimeStr);
                 requestNode.put("exportType", HOURLY.toString());

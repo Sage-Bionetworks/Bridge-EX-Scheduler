@@ -26,8 +26,8 @@ public class BridgeExporterSchedulerTest {
 
     private static final DateTime MOCK_NOW = DateTime.parse("2016-02-01T16:47:55.273+0900");
 
-    private static final DateTime DAILY_END_DATE_TIME = MOCK_NOW
-            .withHourOfDay(0).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0).minusMillis(1);
+    private static final DateTime DAILY_END_DATE_TIME = DateTime.parse("2016-01-31T23:59:59.999+0900");
+    private static final String MOCK_EXPORT_DATE = "2016-01-31";
 
     private AmazonSQSClient mockSqsClient;
     private BridgeExporterScheduler scheduler;
@@ -92,7 +92,7 @@ public class BridgeExporterSchedulerTest {
         assertEquals(sqsMessageNode.size(), 3);
         assertEquals(sqsMessageNode.get("exportType").textValue(), "DAILY");
         assertEquals(sqsMessageNode.get("endDateTime").textValue(), DAILY_END_DATE_TIME.toString());
-        assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";endDateTime=" + DAILY_END_DATE_TIME.toString() + "]");
+        assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";date=" + MOCK_EXPORT_DATE + ";endDateTime=" + DAILY_END_DATE_TIME.toString() + "]");
     }
 
     @Test
@@ -113,7 +113,7 @@ public class BridgeExporterSchedulerTest {
         assertEquals(sqsMessageNode.size(), 4);
 
         String endDateTimeStr = sqsMessageNode.get("endDateTime").textValue();
-        assertEquals(DateTime.parse(endDateTimeStr), DateTime.parse("2016-02-01T16:00:00.000+0900"));
+        assertEquals(DateTime.parse(endDateTimeStr), DateTime.parse("2016-02-01T15:59:59.999+0900"));
 
         JsonNode studyWhitelistNode = sqsMessageNode.get("studyWhitelist");
         assertEquals(studyWhitelistNode.size(), 1);
@@ -121,6 +121,7 @@ public class BridgeExporterSchedulerTest {
 
         assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME
                 + ";endDateTime=" + endDateTimeStr + "]");
+        assertEquals(sqsMessageNode.get("exportType").textValue(), "HOURLY");
     }
 
     @Test
@@ -140,7 +141,7 @@ public class BridgeExporterSchedulerTest {
         assertEquals(sqsMessageNode.size(), 4);
         assertEquals(sqsMessageNode.get("exportType").textValue(), "DAILY");
         assertEquals(sqsMessageNode.get("endDateTime").textValue(), DAILY_END_DATE_TIME.toString());
-        assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";endDateTime=" + DAILY_END_DATE_TIME.toString() + "]");
+        assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";date=" + MOCK_EXPORT_DATE + ";endDateTime=" + DAILY_END_DATE_TIME.toString() + "]");
         assertEquals(sqsMessageNode.get("foo").textValue(), "bar");
     }
 }
