@@ -66,6 +66,9 @@ public class BridgeExporterScheduler {
             requestNode = (ObjectNode) JSON_OBJECT_MAPPER.readTree(requestOverrideJson);
         }
 
+        // Basic args: useLastExportTime=true
+        requestNode.put("useLastExportTime", true);
+
         // Parse schedule type
         ScheduleType scheduleType;
         String scheduleTypeStr = schedulerConfig.getString("scheduleType");
@@ -82,28 +85,27 @@ public class BridgeExporterScheduler {
             }
         }
 
-        // insert date and tag
+        // insert endDateTime and tag
         switch (scheduleType) {
             case DAILY: {
                 // Each day, we export the previous day's data.
+                // For daily, the endTime is start of the current day (exclusive).
+                String endTimeString = DateTime.now(timeZone).withTimeAtStartOfDay().toString();
+                requestNode.put("endDateTime", endTimeString);
+
+                // Keep track of yesterday's date for the tag for logging purposes.
                 String yesterdaysDateString = LocalDate.now(timeZone).minusDays(1).toString();
                 String tag = "[scheduler=" + schedulerName + ";date=" + yesterdaysDateString + "]";
-                requestNode.put("date", yesterdaysDateString);
                 requestNode.put("tag", tag);
             }
             break;
             case HOURLY: {
-                // endDateTime is the start of the current hour. startDateTime is the hour before.
+                // endDateTime is the start of the current hour
                 DateTime endDateTime = DateTime.now(timeZone).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0);
                 String endDateTimeStr = endDateTime.toString();
                 requestNode.put("endDateTime", endDateTimeStr);
 
-                DateTime startDateTime = endDateTime.minusHours(1);
-                String startDateTimeStr = startDateTime.toString();
-                requestNode.put("startDateTime", startDateTimeStr);
-
-                String tag = "[scheduler=" + schedulerName + ";startDateTime=" + startDateTimeStr + ";endDateTime=" +
-                        endDateTimeStr + "]";
+                String tag = "[scheduler=" + schedulerName + ";endDateTime=" + endDateTimeStr + "]";
                 requestNode.put("tag", tag);
             }
             break;
