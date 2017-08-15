@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.Table;
@@ -85,8 +86,12 @@ public class BridgeExporterSchedulerTest {
 
         String sqsMessage = sqsMessageCaptor.getValue();
         JsonNode sqsMessageNode = JSON_OBJECT_MAPPER.readTree(sqsMessage);
-        assertEquals(sqsMessageNode.size(), 2);
-        assertEquals(sqsMessageNode.get("date").textValue(), "2016-01-31");
+        assertEquals(sqsMessageNode.size(), 3);
+
+        String endDateTimeStr = sqsMessageNode.get("endDateTime").textValue();
+        assertEquals(DateTime.parse(endDateTimeStr), DateTime.parse("2016-02-01T00:00:00.000+0900"));
+
+        assertTrue(sqsMessageNode.get("useLastExportTime").booleanValue());
         assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";date=2016-01-31]");
     }
 
@@ -107,9 +112,6 @@ public class BridgeExporterSchedulerTest {
         JsonNode sqsMessageNode = JSON_OBJECT_MAPPER.readTree(sqsMessage);
         assertEquals(sqsMessageNode.size(), 4);
 
-        String startDateTimeStr = sqsMessageNode.get("startDateTime").textValue();
-        assertEquals(DateTime.parse(startDateTimeStr), DateTime.parse("2016-02-01T15:00:00.000+0900"));
-
         String endDateTimeStr = sqsMessageNode.get("endDateTime").textValue();
         assertEquals(DateTime.parse(endDateTimeStr), DateTime.parse("2016-02-01T16:00:00.000+0900"));
 
@@ -117,8 +119,9 @@ public class BridgeExporterSchedulerTest {
         assertEquals(studyWhitelistNode.size(), 1);
         assertEquals(studyWhitelistNode.get(0).textValue(), "hourly-study");
 
-        assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";startDateTime=" +
-                startDateTimeStr + ";endDateTime=" + endDateTimeStr + "]");
+        assertTrue(sqsMessageNode.get("useLastExportTime").booleanValue());
+        assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";endDateTime=" +
+                endDateTimeStr + "]");
     }
 
     @Test
@@ -135,8 +138,12 @@ public class BridgeExporterSchedulerTest {
 
         String sqsMessage = sqsMessageCaptor.getValue();
         JsonNode sqsMessageNode = JSON_OBJECT_MAPPER.readTree(sqsMessage);
-        assertEquals(sqsMessageNode.size(), 3);
-        assertEquals(sqsMessageNode.get("date").textValue(), "2016-01-31");
+        assertEquals(sqsMessageNode.size(), 4);
+
+        String endDateTimeStr = sqsMessageNode.get("endDateTime").textValue();
+        assertEquals(DateTime.parse(endDateTimeStr), DateTime.parse("2016-02-01T00:00:00.000+0900"));
+
+        assertTrue(sqsMessageNode.get("useLastExportTime").booleanValue());
         assertEquals(sqsMessageNode.get("tag").textValue(), "[scheduler=" + TEST_SCHEDULER_NAME + ";date=2016-01-31]");
         assertEquals(sqsMessageNode.get("foo").textValue(), "bar");
     }
